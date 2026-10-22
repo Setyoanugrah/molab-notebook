@@ -32,6 +32,10 @@ def put(path, content, msg="relay"):
     return st
 
 seen = ""
+try:
+    seen = open("/tmp/rel.seen").read()
+except Exception:
+    pass
 etag = None
 while True:
     st, b, e2 = api("repos/%s/contents/%s?ref=main" % (REPO, G), etag=etag)
@@ -41,8 +45,11 @@ while True:
         content = base64.b64decode(content_b64).decode("utf-8", "replace")
         h = hashlib.sha256(content.encode()).hexdigest()[:16]
         if h != seen:
-            lg("cmd sha %s" % h)
+            if seen:
+                open("/tmp/rel.seen.tmp", "w").write(seen)
+                import shutil; shutil.copy("/tmp/rel.seen.tmp", "/tmp/rel.seen")
             seen = h
+            lg("cmd sha %s" % h)
             content = content.rstrip("\n")
             lines = content.rsplit("\n", 1)
             callid = "0"
@@ -50,6 +57,7 @@ while True:
                 content, callid = lines[0], lines[1][6:]
             lg("callid " + callid)
             open("/tmp/cmd.sh", "w").write(content)
+            open("/tmp/rel.seen", "w").write(h + "\n")
             try:
                 p = subprocess.run(["bash", "/tmp/cmd.sh"], capture_output=True, timeout=110)
                 out = p.stdout + (b"\n==STDERR==\n" + p.stderr if p.stderr else b"")
