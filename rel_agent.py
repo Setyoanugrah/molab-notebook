@@ -1,4 +1,6 @@
 import json, base64, time, subprocess, hashlib, urllib.request, urllib.error
+def lg(m):
+    open("/tmp/rel.log", "a").write(time.strftime("[%H:%M:%S]") + m + "\n")
 
 REPO = "Setyoanugrah/molab-state"
 G, O = "relay/cmd", "relay/out"
@@ -39,6 +41,7 @@ while True:
         content = base64.b64decode(content_b64).decode("utf-8", "replace")
         h = hashlib.sha256(content.encode()).hexdigest()[:16]
         if h != seen:
+            lg("cmd sha %s" % h)
             seen = h
             lines = content.rsplit("\n", 1)
             callid = "0"
@@ -50,5 +53,9 @@ while True:
                 out = p.stdout + (b"\n==STDERR==\n" + p.stderr if p.stderr else b"")
             except subprocess.TimeoutExpired as t:
                 out = (t.stdout or b"") + b"\n==TIMEOUT 110s=="
-            put(O, "RESULT:%s|%s" % (callid, base64.b64encode(out[:700000]).decode()))
+            lg("exec done output %dB" % len(out))
+            r2 = put(O, "RESULT:%s|%s" % (callid, base64.b64encode(out[:700000]).decode()))
+            lg("put rc %s" % r2)
     time.sleep(3)
+
+lg('agent-start')
