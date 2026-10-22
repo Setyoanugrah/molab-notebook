@@ -11,7 +11,8 @@ def api(path, method="GET", body=None, etag=None):
     if etag:
         hd["If-None-Match"] = etag
     req = urllib.request.Request("https://api.github.com/" + path,
-        headers=hd, data=json.dumps(body).encode() if body else None)
+        headers=hd, data=json.dumps(body).encode() if body else None,
+        method=method)
     try:
         r = urllib.request.urlopen(req)
         bt = r.read()
