@@ -12,27 +12,12 @@ def _():
 
 
 @app.cell
-async def _():
-    import asyncio
+def _():
     import subprocess
-    done = False
-    for i in range(60):
-        await asyncio.sleep(8)
-        try:
-            if "KVPSJSON" in open("/root/kvboot.log").read():
-                done = True
-                break
-        except Exception:
-            pass
-    o = subprocess.run("grep -h KVPS /root/kvboot.log | tail -4; echo ==TAIL; tail -3 /root/kvboot.log", shell=True, capture_output=True, text=True).stdout
+    o = subprocess.run("grep -h KVPS /root/kvboot.log | tail -4", shell=True, capture_output=True, text=True).stdout
     print(o)
-    print("KVPSFINISHED" if done else "KVPSNEVERWENT")
-    return (asyncio, subtxt())
-
-
-def subtxt():
-    import subprocess as s
-    return s
+    print("KVPSFINAL")
+    return (o,)
 
 
 if __name__ == "__main__":
