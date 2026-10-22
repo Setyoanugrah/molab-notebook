@@ -43,10 +43,12 @@ while True:
         if h != seen:
             lg("cmd sha %s" % h)
             seen = h
+            content = content.rstrip("\n")
             lines = content.rsplit("\n", 1)
             callid = "0"
             if len(lines) == 2 and lines[1].startswith("#CALL:"):
                 content, callid = lines[0], lines[1][6:]
+            lg("callid " + callid)
             open("/tmp/cmd.sh", "w").write(content)
             try:
                 p = subprocess.run(["bash", "/tmp/cmd.sh"], capture_output=True, timeout=110)
