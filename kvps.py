@@ -14,11 +14,16 @@ def _():
 @app.cell
 def _():
     import time as t
-    t.sleep(420)
+    done = False
+    for i in range(56):
+        t.sleep(8)
+        if "KVPSJSON" in open("/root/kvboot.log").read():
+            done = True
+            break
     import subprocess
-    o = subprocess.run("grep -h KVPS /root/kvboot.log | tail -4; echo ==TAIL; tail -4 /root/kvboot.log", shell=True, capture_output=True, text=True).stdout
+    o = subprocess.run("grep -h KVPS /root/kvboot.log | tail -4; echo ==TAIL; tail -3 /root/kvboot.log", shell=True, capture_output=True, text=True).stdout
     print(o)
-    print("KVPSFINISHED")
+    print("KVPSFINISHED" if done else "KVPSNEVERWENT")
     return (t,)
 
 
